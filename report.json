@@ -1,0 +1,25 @@
+{
+  "build": {
+    "duration": 0,
+    "timestamp": 1773444496541
+  },
+  "tasks": {
+    "total": 0,
+    "skipped": 0,
+    "failed": 0
+  },
+  "tests": {
+    "total": 2,
+    "passed": 2,
+    "failed": 0,
+    "skipped": 0
+  },
+  "issues": {
+    "warnings": 0,
+    "errors": 0
+  },
+  "testList": [
+    {"name": "testSomething", "class": "com.example.AppTest", "passed": true, "skipped": false, "duration": 45},
+    {"name": "testAnother", "class": "com.example.AppTest", "passed": true, "skipped": false, "duration": 23}
+  ]
+}

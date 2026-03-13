@@ -1,0 +1,14 @@
+Starting a Gradle Daemon, a new Daemon will be spawned
+Configuring project :app
+> Task :app:preBuild UP-TO-DATE
+> Task :app:compileDebugKotlin
+> Task :app:compileDebugJavaWithJavac
+> Task :app:processDebugResources
+> Task :app:test
+Test started 'testSomething' (com.example.AppTest)
+Test passed 'testSomething' (com.example.AppTest) in 45ms
+Test started 'testAnother' (com.example.AppTest)
+Test passed 'testAnother' (com.example.AppTest) in 23ms
+> Task :app:test UP-TO-DATE
+> Task :app:build
+BUILD SUCCESSFUL in 15.234s

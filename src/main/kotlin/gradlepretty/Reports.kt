@@ -1,0 +1,185 @@
+package gradlepretty
+
+import java.io.File
+
+class JsonReportGenerator {
+    fun generate(summary: BuildSummary): String {
+        val sb = StringBuilder()
+        sb.appendLine("{")
+        sb.appendLine("  \"build\": {")
+        sb.appendLine("    \"duration\": ${summary.duration},")
+        sb.appendLine("    \"timestamp\": ${System.currentTimeMillis()}")
+        sb.appendLine("  },")
+        sb.appendLine("  \"tasks\": {")
+        sb.appendLine("    \"total\": ${summary.tasks.size},")
+        sb.appendLine("    \"skipped\": ${summary.tasks.count { it.skipped }},")
+        sb.appendLine("    \"failed\": ${summary.tasks.count { it.failed }}")
+        sb.appendLine("  },")
+        sb.appendLine("  \"tests\": {")
+        sb.appendLine("    \"total\": ${summary.tests.size},")
+        sb.appendLine("    \"passed\": ${summary.passedTests},")
+        sb.appendLine("    \"failed\": ${summary.failedTests},")
+        sb.appendLine("    \"skipped\": ${summary.skippedTests}")
+        sb.appendLine("  },")
+        sb.appendLine("  \"issues\": {")
+        sb.appendLine("    \"warnings\": ${summary.warnings},")
+        sb.appendLine("    \"errors\": ${summary.errors}")
+        sb.appendLine("  },")
+        
+        if (summary.tasks.isNotEmpty()) {
+            sb.appendLine("  \"taskList\": [")
+            summary.tasks.forEachIndexed { index, task ->
+                sb.append("    {\"name\": \"${task.name}\", \"duration\": ${task.duration}, \"skipped\": ${task.skipped}, \"failed\": ${task.failed}}")
+                if (index < summary.tasks.size - 1) sb.append(",")
+                sb.appendLine()
+            }
+            sb.appendLine("  ],")
+        }
+        
+        if (summary.tests.isNotEmpty()) {
+            sb.appendLine("  \"testList\": [")
+            summary.tests.forEachIndexed { index, test ->
+                sb.append("    {\"name\": \"${test.name}\", \"class\": \"${test.className}\", \"passed\": ${test.passed}, \"skipped\": ${test.skipped}, \"duration\": ${test.duration}}")
+                if (index < summary.tests.size - 1) sb.append(",")
+                sb.appendLine()
+            }
+            sb.appendLine("  ]")
+        }
+        
+        sb.appendLine("}")
+        return sb.toString()
+    }
+    
+    fun writeToFile(summary: BuildSummary, filename: String) {
+        File(filename).writeText(generate(summary))
+    }
+}
+
+class HtmlReportGenerator {
+    fun generate(summary: BuildSummary): String {
+        return """
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Gradle Build Report</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 40px; background: #f5f5f5; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { color: #333; border-bottom: 2px solid #6c757d; padding-bottom: 10px; }
+        .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin: 20px 0; }
+        .stat { background: #f8f9fa; padding: 15px; border-radius: 6px; text-align: center; }
+        .stat-value { font-size: 28px; font-weight: bold; color: #333; }
+        .stat-label { font-size: 12px; color: #666; text-transform: uppercase; }
+        .stat.passed .stat-value { color: #28a745; }
+        .stat.failed .stat-value { color: #dc3545; }
+        .stat.skipped .stat-value { color: #ffc107; }
+        .stat.warning .stat-value { color: #fd7e14; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #eee; }
+        th { background: #f8f9fa; font-weight: 600; color: #333; }
+        .badge { padding: 3px 8px; border-radius: 3px; font-size: 11px; font-weight: 600; }
+        .badge-success { background: #d4edda; color: #155724; }
+        .badge-danger { background: #f8d7da; color: #721c24; }
+        .badge-warning { background: #fff3cd; color: #856404; }
+        .badge-info { background: #d1ecf1; color: #0c5460; }
+        .duration { color: #666; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Gradle Build Report</h1>
+        
+        <div class="summary">
+            <div class="stat passed">
+                <div class="stat-value">${summary.passedTests}</div>
+                <div class="stat-label">Tests Passed</div>
+            </div>
+            <div class="stat failed">
+                <div class="stat-value">${summary.failedTests}</div>
+                <div class="stat-label">Tests Failed</div>
+            </div>
+            <div class="stat skipped">
+                <div class="stat-value">${summary.skippedTests}</div>
+                <div class="stat-label">Tests Skipped</div>
+            </div>
+            <div class="stat warning">
+                <div class="stat-value">${summary.warnings}</div>
+                <div class="stat-label">Warnings</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value">${summary.tasks.size}</div>
+                <div class="stat-label">Tasks</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value">${if (summary.duration > 0) "${summary.duration / 1000.0}s" else "-"}</div>
+                <div class="stat-label">Duration</div>
+            </div>
+        </div>
+        
+        ${if (summary.tests.isNotEmpty()) """
+        <h2>Test Results</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Test</th>
+                    <th>Class</th>
+                    <th>Status</th>
+                    <th>Duration</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${summary.tests.joinToString("") { test ->
+                    """<tr>
+                    <td>${test.name}</td>
+                    <td>${test.className}</td>
+                    <td>
+                        ${when {
+                            test.skipped -> """<span class="badge badge-warning">Skipped</span>"""
+                            test.passed -> """<span class="badge badge-success">Passed</span>"""
+                            else -> """<span class="badge badge-danger">Failed</span>"""
+                        }}
+                    </td>
+                    <td class="duration">${test.duration}ms</td>
+                </tr>"""
+                }}
+            </tbody>
+        </table>
+        """ else ""}
+        
+        ${if (summary.tasks.isNotEmpty()) """
+        <h2>Task Execution</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Task</th>
+                    <th>Status</th>
+                    <th>Duration</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${summary.tasks.joinToString("") { task ->
+                    """<tr>
+                    <td>${task.name}</td>
+                    <td>
+                        ${when {
+                            task.skipped -> """<span class="badge badge-warning">Skipped</span>"""
+                            task.failed -> """<span class="badge badge-danger">Failed</span>"""
+                            else -> """<span class="badge badge-success">Success</span>"""
+                        }}
+                    </td>
+                    <td class="duration">${if (task.duration > 0) "${task.duration}ms" else "-"}</td>
+                </tr>"""
+                }}
+            </tbody>
+        </table>
+        """ else ""}
+    </div>
+</body>
+</html>
+        """.trim()
+    }
+    
+    fun writeToFile(summary: BuildSummary, filename: String) {
+        File(filename).writeText(generate(summary))
+    }
+}
