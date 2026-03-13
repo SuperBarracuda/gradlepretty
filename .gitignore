@@ -1,0 +1,7 @@
+*.jar
+*.zip
+kotlinc/
+.gradle/
+build/
+*.class
+.DS_Store
